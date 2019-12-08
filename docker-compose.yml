@@ -1,0 +1,252 @@
+version: '3.7'
+
+services: 
+  pd1:
+    image: pingcap/pd:latest
+    volumes: 
+      - pd1:/data
+      - ./config/pd:/config:ro
+      - ./log:/var/log/
+    ports: 
+      - "2379"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.29
+    command:
+      - --name=pd1
+      - --data-dir=/data
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-client-urls=http://10.10.17.29:2379
+      - --advertise-peer-urls=http://10.10.17.29:2380
+      - --initial-cluster=pd1=http://10.10.17.29:2380,pd2=http://10.10.17.30:2380,pd3=http://10.10.17.31:2380
+      - --config=/config/pd.toml
+      - --log-file=/var/log/pd1.log
+
+  pd2:
+    image: pingcap/pd:latest
+    volumes: 
+      - pd2:/data
+      - ./config/pd:/config:ro
+      - ./log:/var/log/
+    ports: 
+      - "2379"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.30
+    command:
+      - --name=pd2
+      - --data-dir=/data
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-client-urls=http://10.10.17.30:2379
+      - --advertise-peer-urls=http://10.10.17.30:2380
+      - --initial-cluster=pd1=http://10.10.17.29:2380,pd2=http://10.10.17.30:2380,pd3=http://10.10.17.31:2380
+      - --config=/config/pd.toml
+      - --log-file=/var/log/pd2.log
+
+  pd3:
+    image: pingcap/pd:latest
+    volumes: 
+      - pd3:/data
+      - ./config/pd:/config:ro
+      - ./log:/var/log/
+    ports: 
+      - "2379"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.31
+    command:
+      - --name=pd3
+      - --data-dir=/data
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-client-urls=http://10.10.17.31:2379
+      - --advertise-peer-urls=http://10.10.17.31:2380
+      - --initial-cluster=pd1=http://10.10.17.29:2380,pd2=http://10.10.17.30:2380,pd3=http://10.10.17.31:2380
+      - --config=/config/pd.toml
+      - --log-file=/var/log/pd3.log
+
+  tikv1:
+    image: pingcap/tikv:latest
+    volumes:
+      - tikv1:/data
+      - ./config/tikv:/config:ro
+      - ./log:/var/log/
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.32
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=10.10.17.32:20160
+      - --data-dir=/data
+      - --pd=10.10.17.29:2379,10.10.17.30:2379,10.10.17.31:2379
+      - --config=/config/tikv.toml
+      - --log-file=/var/log/tikv1.log
+    depends_on:
+      - "pd1"
+      - "pd2"
+      - "pd3"
+
+  tikv2:
+    image: pingcap/tikv:latest
+    volumes:
+      - tikv2:/data
+      - ./config/tikv:/config:ro
+      - ./log:/var/log/
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.33
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=10.10.17.33:20160
+      - --data-dir=/data
+      - --pd=10.10.17.29:2379,10.10.17.30:2379,10.10.17.31:2379
+      - --config=/config/tikv.toml
+      - --log-file=/var/log/tikv2.log
+    depends_on:
+      - "pd1"
+      - "pd2"
+      - "pd3"
+
+  tikv3:
+    image: pingcap/tikv:latest
+    volumes:
+      - tikv3:/data
+      - ./config/tikv:/config:ro
+      - ./log:/var/log/
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.34
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=10.10.17.34:20160
+      - --data-dir=/data
+      - --pd=10.10.17.29:2379,10.10.17.30:2379,10.10.17.31:2379
+      - --config=/config/tikv.toml
+      - --log-file=/var/log/tikv3.log
+    depends_on:
+      - "pd1"
+      - "pd2"
+      - "pd3"
+
+  tidb:
+    image: pingcap/tidb:latest
+    ports:
+      - 4000:4000
+      - 10080:10080
+    volumes:
+      - ./config/tidb:/config:ro
+      - ./log:/var/log/
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.35
+    command:
+      - --store=tikv
+      - --path=10.10.17.29:2379,10.10.17.30:2379,10.10.17.31:2379
+      - --config=/config/tidb.toml
+      - --log-file=/var/log/tidb.log
+    depends_on:
+      - "tikv1"
+      - "tikv2"
+      - "tikv3"
+      - "pd1"
+      - "pd2"
+      - "pd3"
+
+#monitoring
+
+  pushgateway:
+    image: prom/pushgateway:v0.3.1
+    command:
+      - --log.level=error
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.36
+
+  prometheus:
+    user: root
+    image: prom/prometheus:v2.2.1
+    command:
+      - --log.level=error
+      - --storage.tsdb.path=/data/prometheus
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.37
+    volumes:
+      - ./config/prometheus/:/etc/prometheus/:ro
+      - prometheus:/data
+
+  grafana:
+    image: grafana/grafana:6.0.1
+    user: "0"
+    environment:
+      GF_LOG_LEVEL: error
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_PATHS_CONFIG: /etc/grafana/grafana.ini
+    volumes:
+      - ./config/grafana/config:/etc/grafana
+      - ./config/grafana/dashboards:/tmp/dashboards
+      - grafana:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.38
+
+volumes: 
+  pd1: {}
+  pd2: {}
+  pd3: {}
+  tikv1: {}
+  tikv2: {}
+  tikv3: {}
+  prometheus: {}
+  grafana: {}
+
+networks:
+  bdt_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.10.17.0/24
