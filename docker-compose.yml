@@ -245,7 +245,7 @@ services:
       - DB_PASSWORD=
     volumes: 
       - web_server:/var/www
-      - ./config/web_server/log:/var/log/apache2
+      - ./log/web_server:/var/log/apache2
       - ./config/web_server/root:/root
     depends_on: 
       - tidb
@@ -259,6 +259,23 @@ services:
     ports: 
       - "80:80"
     command: /bin/bash -c "/bin/bash /root/startup.sh; tail -f /dev/null"
+
+# testing for sysbench
+  testing_client:
+    build: ./config/testing_client
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.40
+    depends_on: 
+      - web_server
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    volumes: 
+      - ./config/testing_client/root:/root
+    command: /bin/bash -c "/bin/bash /root/startup.sh; tail -f /dev/null"
+
 
 volumes: 
   pd1: {}
