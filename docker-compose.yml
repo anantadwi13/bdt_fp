@@ -233,6 +233,33 @@ services:
       bdt_network:
         ipv4_address: 10.10.17.38
 
+# web server 
+  web_server:
+    build: ./config/web_server
+    environment: 
+      - APP_NAME="Reservasi"
+      - DB_HOST=10.10.17.35
+      - DB_PORT=4000
+      - DB_DATABASE=reservasi
+      - DB_USERNAME=root
+      - DB_PASSWORD=
+    volumes: 
+      - web_server:/var/www
+      - ./config/web_server/log:/var/log/apache2
+      - ./config/web_server/root:/root
+    depends_on: 
+      - tidb
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks: 
+      bdt_network:
+        ipv4_address: 10.10.17.39
+    ports: 
+      - "80:80"
+    command: /bin/bash -c "/bin/bash /root/startup.sh; tail -f /dev/null"
+
 volumes: 
   pd1: {}
   pd2: {}
@@ -242,6 +269,7 @@ volumes:
   tikv3: {}
   prometheus: {}
   grafana: {}
+  web_server: {}
 
 networks:
   bdt_network:
